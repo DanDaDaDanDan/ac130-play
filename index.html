@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>WHITE HOT — BASHER 21</title>
+    <!--
+      No remote font. BAR §4 allows exactly two dependencies (three, esbuild), and a webfont
+      request is both a third dependency and a console error the moment the machine running
+      this is offline. The HUD only needs a monospace face; 'Share Tech Mono' is still first
+      in the stack so it is used when the machine happens to have it installed locally.
+      Inline favicon: without it every load takes a /favicon.ico 404.
+    -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Cpath d='M8 2v12M2 8h12' stroke='%23d8ffe1' stroke-width='1'/%3E%3Ccircle cx='8' cy='8' r='4' fill='none' stroke='%23d8ffe1' stroke-width='1'/%3E%3C/svg%3E"
+    />
+    <style>
+      /*
+        HUD palette — BAR §1.1.1. The sensor image is monochrome to within 4/255; the HUD used
+        to be the only coloured thing in the frame (phosphor green ink, an amber caution, an
+        orange-red alert: three hues, measured at up to 178/255 channel spread against a
+        reference bar of 8). Hue is gone. What is left is a four-step LUMINANCE ladder plus one
+        inverse-video ink, all carrying the same faint uniform phosphor cast (r = 0.988g,
+        b = 0.992g -> at most 3/255 of spread, inside the reference frames' own 7-8).
+
+        Severity is re-encoded the way real instrumentation encodes it and colourblind readers
+        actually receive it: brightness step, weight, boxing, blink rate, and inverse video for
+        anything that has to shout. See src/ui/hud.css for the state table.
+      */
+      :root {
+        color-scheme: dark;
+        --hud-hi: #fcfffd;    /* L4 saturated — alerts, inverse-video fills, FRIENDLY */
+        --hud: #e7eae8;       /* L3 normal ink */
+        --hud-dim: #9b9d9c;   /* L2 caption / label */
+        --hud-faint: #676867; /* L1 rules, inactive rows */
+        --hud-inv: #080a09;   /* text drawn inside an inverse-video block */
+        /* The fill behind inverse-video text. Deliberately 0.985 and not opaque: Blink turns
+           LCD/ClearType subpixel filtering back ON for text it can prove sits on an opaque
+           background, and that filtering is itself a hue violation (measured: rgb(8,135,198)
+           on the CHECK FIRE banner, spread 190). 1.5% transparency is invisible and forces
+           greyscale antialiasing. See src/ui/hud.css. */
+        --hud-hi-fill: rgba(252, 255, 253, 0.985);
+        /* Legacy names kept so nothing breaks; they are luminance steps now, not hues. */
+        --hud-warn: #fcfffd;
+        --hud-alert: #fcfffd;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        color: var(--hud);
+        font-family: 'Share Tech Mono', ui-monospace, 'Cascadia Mono', Consolas, 'DejaVu Sans Mono',
+          'Courier New', monospace;
+        -webkit-font-smoothing: antialiased;
+        touch-action: none;
+        overscroll-behavior: none;
+      }
+      #app { position: fixed; inset: 0; }
+      /*
+        THE VIEWPORT IS NOT THE SENSOR IMAGE — BAR §1.4.
+
+        Real AC-130H/U sensor video is 4:3 standard definition, and the operator sees it as a
+        ~4:3 monochrome monitor inside a very dark rack, flanked on both bezels by vertical
+        strips of hardware pushbuttons (primary photograph, SrA Ali E. Flisek, 4 SOS, Hurlburt
+        Field, 6 Aug 2007, public domain). A 16:9 full-bleed sensor image is an AC-130J-
+        generation look, and §6 now lists it as an automatic fail.
+
+        So `#rack` is the compartment and `#device` is the 4:3 raster the canvas renders into.
+        `#device` is positioned and sized by src/ui/bezel.js, in integer pixels; nothing else
+        may size it, and `src/core/engine.js` finds it by `data-device-raster` and drives the
+        renderer, the camera aspect and the heat buffer from it — the world is RENDERED at 4:3
+        rather than letterboxed down from a 16:9 render.
+
+        `#hud` stays a FULL-VIEWPORT layer above the rack, and that is deliberate. hud.js reads
+        `window.SPECTRE_DEVICE_RECT` (published by bezel.js) and positions the symbology into
+        it through the `--dev-l/--dev-t/--dev-w/--dev-h` custom properties, which are viewport
+        coordinates. Nesting `#hud` inside `#device` would apply those offsets twice.
+
+        `#device` is the only rectangle the ink budget (§1.3) is measured over. Everything the
+        rack draws is hardware and is outside that rectangle by construction, so no bezel pixel
+        can ever land in the budget.
+
+        `#overlay` (menu, pause, debrief) is full-viewport and sits above everything.
+      */
+      #hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        user-select: none;
+        z-index: 5;
+      }
+      #overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: auto;
+        user-select: none;
+        z-index: 10;
+      }
+      #boot {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        gap: 0.75rem;
+        text-align: center;
+        background: #000;
+        z-index: 100;
+        letter-spacing: 0.18em;
+        font-size: 13px;
+        color: var(--hud-dim);
+      }
+      #boot b { color: var(--hud); letter-spacing: 0.3em; font-size: 15px; }
+      .noscript { padding: 2rem; }
+    </style>
+    <link rel="stylesheet" href="bezel.css" />
+    <link rel="stylesheet" href="boot.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="rack">
+        <div id="device" data-device-raster>
+          <canvas id="view"></canvas>
+        </div>
+      </div>
+      <div id="hud"></div>
+      <div id="overlay"></div>
+      <!-- AC-130U Spooky II, not H: the 25/40/105 gun set is the U's. The H carried
+           2x20 mm M61 + 40 mm + 105 mm and could not mount the GAU-12. REALISM.md A7.
+           No boot splash element ships: bootFail() (ui/boot_gate.js) builds #boot itself
+           if the WebGL2 gate or a boot fault needs the failure card. -->
+    </div>
+    <noscript><div class="noscript">This simulation requires JavaScript and WebGL2.</div></noscript>
+    <!--
+      bezel.js FIRST, and deliberately not through main.js. Module scripts execute in document
+      order, so the console is built and `#device` already has its real integer size before
+      `new Engine()` reads its container — the renderer, the camera aspect and the heat buffer
+      are then sized to the 4:3 raster directly rather than being letterboxed down from 16:9.
+      main.js is the integrator's file; the bezel is a chassis, not a subsystem.
+    -->
+    <script src="packs/shim.js"></script>
+    <script>
+self.__loadVoPack = function () {
+  if (self.__voPackReq) return self.__voPackReq;
+  try { performance.mark('warm:vo:start'); } catch (e) {}
+  self.__voPackReq = new Promise(function (done) {
+    var s = document.createElement('script');
+    s.src = 'packs/vo.js';
+    s.onload = function () {
+      try { performance.mark('warm:vo'); } catch (e) {}
+      try { window.dispatchEvent(new Event('packs:vo')); } catch (e) {}
+      done();
+    };
+    // A missing pack must dispatch too: voice.js is parked on this event, and the refetch it
+    // then does is what lands the module in its honest, supported 'absent' state (babble rung)
+    // instead of claiming 'loading' forever.
+    s.onerror = function () {
+      try { window.dispatchEvent(new Event('packs:vo')); } catch (e) {}
+      done();
+    };
+    document.body.appendChild(s);
+  });
+  return self.__voPackReq;
+};
+</script>
+    <script src="boot.js"></script>
+    
+  </body>
+</html>
