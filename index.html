@@ -3,6 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!--
+      The iOS full-window story, and its limits. These metas only matter for a HOME-SCREEN
+      launch (added to the home screen, the game then opens without Safari's chrome — the only
+      true fullscreen an iPhone offers a web page). In-browser, iPhone Safari has no element
+      fullscreen API at all, so `ui/touch.js` hides the FULL button there and the rotate hint
+      carries the landscape ask. `black` status bar keeps the launch chrome in the game's
+      palette. Nothing here changes a desktop or an in-browser Android load.
+    -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <title>WHITE HOT — BASHER 21</title>
     <!--
       No remote font. BAR §4 allows exactly two dependencies (three, esbuild), and a webfont
@@ -117,8 +128,8 @@
       #boot b { color: var(--hud); letter-spacing: 0.3em; font-size: 15px; }
       .noscript { padding: 2rem; }
     </style>
-    <link rel="stylesheet" href="bezel.css?v=cb400e9%2B2026-08-13T18%3A34Z" />
-    <link rel="stylesheet" href="boot.css?v=cb400e9%2B2026-08-13T18%3A34Z" />
+    <link rel="stylesheet" href="bezel.css?v=cb400e9-dirty%2B2026-08-13T19%3A17Z" />
+    <link rel="stylesheet" href="boot.css?v=cb400e9-dirty%2B2026-08-13T19%3A17Z" />
   </head>
   <body>
     <div id="app">
@@ -142,8 +153,8 @@
       are then sized to the 4:3 raster directly rather than being letterboxed down from 16:9.
       main.js is the integrator's file; the bezel is a chassis, not a subsystem.
     -->
-    <script>self.__SPECTRE_BUILD__ = "cb400e9+2026-08-13T18:34Z";</script>
-    <script src="packs/shim.js?v=cb400e9%2B2026-08-13T18%3A34Z"></script>
+    <script>self.__SPECTRE_BUILD__ = "cb400e9-dirty+2026-08-13T19:17Z";</script>
+    <script src="packs/shim.js?v=cb400e9-dirty%2B2026-08-13T19%3A17Z"></script>
     <script>
 self.__loadVoPack = function () {
   if (self.__voPackReq) return self.__voPackReq;
@@ -168,7 +179,7 @@ self.__loadVoPack = function () {
   return self.__voPackReq;
 };
 </script>
-    <script src="boot.js?v=cb400e9%2B2026-08-13T18%3A34Z"></script>
+    <script src="boot.js?v=cb400e9-dirty%2B2026-08-13T19%3A17Z"></script>
     
   </body>
 </html>
