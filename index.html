@@ -2,7 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <!--
+      maximum-scale/user-scalable: the two-finger pinch belongs to the SENSOR, not the page.
+      Without these the browser may claim a pinch for page zoom before the game's
+      `touch-action: none` chain is even consulted (iOS Safari ignores user-scalable for
+      accessibility zoom since iOS 10 — which is why `ui/touch.js` ALSO preventDefaults
+      `gesturestart`; the three layers are belt, braces and the iOS-specific third hand).
+    -->
     <!--
       The iOS full-window story, and its limits. These metas only matter for a HOME-SCREEN
       launch (added to the home screen, the game then opens without Safari's chrome — the only
@@ -128,8 +138,8 @@
       #boot b { color: var(--hud); letter-spacing: 0.3em; font-size: 15px; }
       .noscript { padding: 2rem; }
     </style>
-    <link rel="stylesheet" href="bezel.css?v=3788832%2B2026-08-13T19%3A55Z" />
-    <link rel="stylesheet" href="boot.css?v=3788832%2B2026-08-13T19%3A55Z" />
+    <link rel="stylesheet" href="bezel.css?v=6407424%2B2026-08-14T17%3A28Z" />
+    <link rel="stylesheet" href="boot.css?v=6407424%2B2026-08-14T17%3A28Z" />
   </head>
   <body>
     <div id="app">
@@ -153,8 +163,8 @@
       are then sized to the 4:3 raster directly rather than being letterboxed down from 16:9.
       main.js is the integrator's file; the bezel is a chassis, not a subsystem.
     -->
-    <script>self.__SPECTRE_BUILD__ = "3788832+2026-08-13T19:55Z";</script>
-    <script src="packs/shim.js?v=3788832%2B2026-08-13T19%3A55Z"></script>
+    <script>self.__SPECTRE_BUILD__ = "6407424+2026-08-14T17:28Z";</script>
+    <script src="packs/shim.js?v=6407424%2B2026-08-14T17%3A28Z"></script>
     <script>
 self.__loadVoPack = function () {
   if (self.__voPackReq) return self.__voPackReq;
@@ -179,7 +189,7 @@ self.__loadVoPack = function () {
   return self.__voPackReq;
 };
 </script>
-    <script src="boot.js?v=3788832%2B2026-08-13T19%3A55Z"></script>
+    <script src="boot.js?v=6407424%2B2026-08-14T17%3A28Z"></script>
     
   </body>
 </html>
